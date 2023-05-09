@@ -1,0 +1,9 @@
+/vendor
+/.idea
+/public/compiled
+/node_modules/
+/package-lock.json
+/public/devstart.php
+/public/js/demo_data
+/var/
+/public/family/
