@@ -1,8 +1,8 @@
 <?php
-
+namespace szalailaszlo\phash;
 /**
  * |----------------------------------------------------------------------
- * | 
+ * |
  * |----------------------------------------------------------------------
 */
 class Phash{
@@ -25,7 +25,7 @@ class Phash{
         for (; $num > 0; $num >>= 8) $count += $this->bitCounts[($num & 0xff)];
         return $count;
     }
-    
+
     /**
     * |---------------------------------------------------------------------
     * | Returns a percentage similarity using the bitCount method.
@@ -41,7 +41,7 @@ class Phash{
             case "HAMMING":
                 return $this->getSimilarityHamming($hash1, $hash2);
             case "BITS":
-                return $this->getSimilarityBits($hash1, $hash2);            
+                return $this->getSimilarityBits($hash1, $hash2);
         }
     }
 
@@ -67,7 +67,7 @@ class Phash{
 
     // compare hash strings (no rotation)
     // this assumes the strings will be the same length, which they will be
-    // as hashes. 
+    // as hashes.
     public function getSimilarityHamming($hash1, $hash2, $precision = 1)
     {
         if(is_array($hash1))
@@ -81,7 +81,7 @@ class Phash{
                 {
                     $similarity--;
                 }
-            }            
+            }
             $percentage = round(($similarity/count($hash1)*100), $precision);
             return $percentage;
         }
@@ -163,16 +163,21 @@ class Phash{
      * | Accepts PNG or JPEG images
      * |---------------------------------------------------------------------
      * @param string full path to the file
-     * @return computed hash  
+     * @return computed hash
      */
     public function getHash($filepath, $asstring = true)
     {
-        $scale = 8;//todo, allow scale specification
-        $product = $scale * $scale;
-        $img = file_get_contents ( $filepath );
-        if (! $img)
-        {
-            return 'failed to load ' . $filepath;
+        if (empty($filepath)) {
+            return false;
+        }
+        try {
+            $img = file_get_contents ( $filepath );
+        } catch(\Exception $e){
+            throw new \Exception('failed to load ' . $filepath, $e->getCode());
+        }
+        if (! $img) {
+            throw new \Exception('failed to load ' . $filepath, 404);
+            return false;
         }
         $img = imagecreatefromstring ( $img );
         if (! $img)
@@ -190,18 +195,21 @@ class Phash{
                 $supportedFormats .= trim ( substr ( $key, 0, strlen ( $key ) - $needleLen ) ) . ', ';
             }
             $supportedFormats = rtrim ( $supportedFormats, ', ' );
-            return 'the image format is not supported. supported formats: ' . $supportedFormats;
+            throw new \Exception('the image format is not supported. supported formats: ' . $supportedFormats, 500);
+            return false;
         }
-        
+
+        $scale = 8;//todo, allow scale specification
+        $product = $scale * $scale;
         //test image for same size
         $width = imagesx( $img );
         $height = imagesy( $img );
-        
+
         if($width != $scale || $height != $scale)
         {
             //stretch resize to ensure better/accurate comparison
-            $img = $this->makeThumbnail($img, $scale, $scale, $width, $height);            
-        }        
+            $img = $this->makeThumbnail($img, $scale, $scale, $width, $height);
+        }
 
         $averageValue = 0;
         for ($y = 0; $y < $scale; $y++)
